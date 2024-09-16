@@ -27,14 +27,14 @@ class Model(nn.Module):
             (0, self.d - armdef.arm.spring_joint_count*2))
 
         self.pe = PositionalEncoding(steps, self.d)
-
-        self.middle = MiddleLayer(2, self.d)
+        self.middles = nn.ModuleList([])
 
     def forward(self, x: torch.Tensor, step: torch.Tensor, pos: torch.Tensor):
-        x = self.m(x)
-        x = self.pe(x, step)
-        x = self.middle(x, pos)
-        x = x[:, :armdef.arm.spring_joint_count*2]
+        for middle in self.middles:
+            x = self.m(x)
+            x = self.pe(x, step)
+            x = middle(x, pos)
+            x = x[:, :armdef.arm.spring_joint_count*2]
         return x
 
     def denoise(self, xt: torch.Tensor, steps: int, pos):
@@ -52,6 +52,10 @@ class Model(nn.Module):
             xt = xt.view(-1)
         return xt
 
+class ModelForXY(Model):
+    def __init__(self, steps):
+        super().__init__(steps)
+        self.middles.append(MiddleLayer(2, self.d))
 
 start_beta = 1e-4
 end_beta = 0.02
@@ -72,9 +76,7 @@ def pre_calc_beta_and_alpha():
         if i-1 >= 1:
             alpha_[i] *= alpha_[i-1]
 
-
 pre_calc_beta_and_alpha()
-
 
 class Dataset(torch.utils.data.Dataset):
     def __init__(self, path):

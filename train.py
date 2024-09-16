@@ -1,7 +1,7 @@
 from tqdm import tqdm
 import torch
 import torch.nn as nn
-from diffusion_model import Model, Dataset, steps, gen_xt,  normalize
+from diffusion_model import ModelForXY, Dataset, steps, gen_xt,  normalize
 import os
 
 
@@ -9,7 +9,7 @@ import os
 if __name__ == '__main__':
     device = "cuda"
     dataset = Dataset("data/train.csv")
-    model = Model(steps).to(device)
+    model = ModelForXY(steps).to(device)
     batch_size = 100
     dataloader = torch.utils.data.DataLoader(
         dataset,
@@ -47,4 +47,4 @@ if __name__ == '__main__':
 
     if not os.path.exists('data'):
         os.mkdir('data')
-    torch.save(model.state_dict(), "data/model.pth")
+    torch.save(model.state_dict(), "data/model_for_xy.pth")

@@ -6,7 +6,7 @@ import copy
 import time
 
 from simulator import definition as armdef
-from diffusion_model import Model, steps, extract, normalize, denormalize
+from diffusion_model import ModelForXY, steps, extract, normalize, denormalize
 
 
 # pathの点を順番に移動する
@@ -15,8 +15,8 @@ from diffusion_model import Model, steps, extract, normalize, denormalize
 def move(path, while_sleep_time=0):
     pygame.init()
     display = pygame.display.set_mode((armdef.width, armdef.height))
-    model = Model(steps)
-    model.load_state_dict(torch.load("data/model.pth"))
+    model = ModelForXY(steps)
+    model.load_state_dict(torch.load("data/model_for_xy.pth"))
     model = model.cuda()
     xt = torch.randn(armdef.arm.spring_joint_count*2).cuda()
     first = True
