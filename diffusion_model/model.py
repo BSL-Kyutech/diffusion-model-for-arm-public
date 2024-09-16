@@ -52,10 +52,29 @@ class Model(nn.Module):
             xt = xt.view(-1)
         return xt
 
+    def denoise_once(self, xt: torch.Tensor, i: int, pos):
+        step = torch.FloatTensor([i]).cuda()
+        z = torch.randn_like(xt)
+        step = torch.Tensor([i]).long()
+        xt_ = xt.view(1, -1)
+        if i == 1:
+            xt = (
+                1/torch.sqrt(alpha[i]))*(xt - (torch.sqrt(beta[i]))*self(xt_, step, pos))
+        else:
+            xt = (1/torch.sqrt(alpha[i]))*(xt-(beta[i]/torch.sqrt(1-alpha_[i]))*self(
+                xt_, step, pos))+torch.sqrt((1-alpha_[i-1])/(1-alpha_[i])*beta[i])*z
+        xt = xt.view(-1)
+        return xt
+
 class ModelForXY(Model):
     def __init__(self, steps):
         super().__init__(steps)
         self.middles.append(MiddleLayer(2, self.d))
+
+class ModelForTheta(Model):
+    def __init__(self, steps):
+        super().__init__(steps)
+        self.middles.append(MiddleLayer(1, self.d))
 
 start_beta = 1e-4
 end_beta = 0.02
