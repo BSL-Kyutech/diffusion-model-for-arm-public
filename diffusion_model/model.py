@@ -5,6 +5,18 @@ import numpy as np
 import pandas as pd
 import math
 
+class MiddleLayer(nn.Module):
+    def __init__(self, target_d, d):
+        super().__init__()
+        self.encoder = FC(d)
+        self.decoder = FC(d)
+        self.fc = nn.Linear(target_d, d)
+
+    def forward(self, x, target):
+        x = self.encoder(x)
+        x = x + self.fc(target)
+        x = self.decoder(x)
+        return x
 
 class Model(nn.Module):
     def __init__(self, steps):
@@ -16,19 +28,12 @@ class Model(nn.Module):
 
         self.pe = PositionalEncoding(steps, self.d)
 
-        self.encoder = FC(self.d)
-        self.decoder = FC(self.d)
-
-        self.pos_fc = nn.Linear(2, self.d)
+        self.middle = MiddleLayer(2, self.d)
 
     def forward(self, x: torch.Tensor, step: torch.Tensor, pos: torch.Tensor):
         x = self.m(x)
         x = self.pe(x, step)
-        x = self.encoder(x)
-        pos_ = self.pos_fc(pos)
-        features = pos_
-        x = x + features
-        x = self.decoder(x)
+        x = self.middle(x, pos)
         x = x[:, :armdef.arm.spring_joint_count*2]
         return x
 
