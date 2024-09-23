@@ -84,7 +84,7 @@ def xy_and_theta(x, y, theta):
     theta = torch.FloatTensor([[theta]]).cuda()
 
     for i in reversed(range(1, steps)):
-        #xt=model_xy.denoise_once(xt, i, pos)
+        xt=model_xy.denoise_once(xt, i, pos)
         xt=model_theta.denoise_once(xt, i, theta).cuda()
 
     arm_ = copy.deepcopy(armdef.arm)
@@ -99,4 +99,10 @@ def xy_and_theta(x, y, theta):
     pygame.quit()
 
 if __name__ == '__main__':
-    xy_and_theta(100, 100, 3.14/2)
+    for i in range(-30,30):
+        xy_and_theta(100, 100, -i/20)
+    #l = []
+    #for i in range(360):
+    #    rad = np.deg2rad(i)
+    #    l += [(armdef.width/2+100*np.cos(rad), armdef.height/2+100*np.sin(rad))]
+    #move(l, 0.001)
