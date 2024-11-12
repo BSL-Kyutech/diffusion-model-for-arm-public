@@ -8,8 +8,8 @@ import math
 class MiddleLayer(nn.Module):
     def __init__(self, target_d, d):
         super().__init__()
-        self.encoder = FC(d)
-        self.decoder = FC(d)
+        self.encoder = Layer(d)
+        self.decoder = Layer(d)
         self.fc = nn.Linear(target_d, d)
 
     def forward(self, x, target):
@@ -88,16 +88,16 @@ class ControlNet(nn.Module):
 
         self.pe = PositionalEncoding(steps, self.d)
 
-        self.encoder = FC(self.d)
-        self.decoder = FC(self.d)
+        self.encoder = Layer(self.d)
+        self.decoder = Layer(self.d)
 
         self.m_copy = nn.ZeroPad1d(
             (0, self.d - armdef.arm.spring_joint_count*2))
 
         self.pe_copy = PositionalEncoding(steps, self.d)
 
-        self.encoder_copy = FC(self.d)
-        self.decoder_copy = FC(self.d)
+        self.encoder_copy = Layer(self.d)
+        self.decoder_copy = Layer(self.d)
 
         self.fc1 = nn.Linear(self.pos_d, self.d)
         self.fc1_copy = nn.Linear(self.pos_d, self.d)
@@ -239,19 +239,17 @@ class PositionalEncoding(torch.nn.Module):
         return x
 
 
-class FC(nn.Module):
+class Layer(nn.Module):
     def __init__(self, d):
         super().__init__()
-        self.relu = nn.ReLU()
-        self.fc = nn.Linear(d, d)
+        self.transformer1 = torch.nn.Transformer(d_model=d, nhead=8, num_encoder_layers=6, num_decoder_layers=6, dim_feedforward=2048, dropout=0.1, activation='relu')
         self.bn = nn.BatchNorm1d(d)
-        self.fc2 = nn.Linear(d, d)
+        self.transformer2 = torch.nn.Transformer(d_model=d, nhead=8, num_encoder_layers=6, num_decoder_layers=6, dim_feedforward=2048, dropout=0.1, activation='relu')
 
     def forward(self, x: torch.Tensor):
-        x = self.fc(x)
+        x = self.transformer1(x,x)
         x = self.bn(x)
-        x = self.relu(x)
-        x = self.fc2(x)
+        x = self.transformer2(x,x)
         return x
 
 

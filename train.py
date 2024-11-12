@@ -73,7 +73,7 @@ def train_theta(model):
             x, pos, theta = x.to(device), pos.to(device), theta.to(device)
             x = normalize(x)
             t = torch.randint(1, steps, (batch_size,),
-                              device=device).long()
+                            device=device).long()
             y = torch.randn_like(x).to(device)
             x = gen_xt(x, t, y)
             x, y = x.to(device), y.to(device)
@@ -110,24 +110,27 @@ def train_controlnet():
         optimizer, start_factor=1, end_factor=0.1, total_iters=epochs)
     criterion = nn.MSELoss()
 
-    for epoch in tqdm(range(epochs)):
-        total_loss = 0
-        for batch, (x, pos, theta) in tqdm(enumerate(dataloader)):
-            x, pos, theta = x.to(device), pos.to(device), theta.to(device)
-            x = normalize(x)
-            t = torch.randint(1, steps, (batch_size,),
-                              device=device).long()
-            y = torch.randn_like(x).to(device)
-            x = gen_xt(x, t, y)
-            x, y = x.to(device), y.to(device)
-            pred = model(x, t, pos)
-            loss = criterion(pred, y)
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            total_loss += loss.item()
-        print(f'epoch:{epoch} {total_loss/len(dataloader)}')
-        scheduler.step()
+    with tqdm(range(epochs)) as pbar:
+        for epoch in pbar:
+            with torch.autocast(dtype=torch.bfloat16):
+                total_loss = 0
+                for batch, (x, pos, theta) in tqdm(enumerate(dataloader)):
+                    x, pos, theta = x.to(device), pos.to(device), theta.to(device)
+                    x = normalize(x)
+                    t = torch.randint(1, steps, (batch_size,),
+                                    device=device).long()
+                    y = torch.randn_like(x).to(device)
+                    x = gen_xt(x, t, y)
+                    x, y = x.to(device), y.to(device)
+                    pred = model(x, t, pos)
+                    loss = criterion(pred, y)
+                    optimizer.zero_grad()
+                    loss.backward()
+                    optimizer.step()
+                    total_loss += loss.item()
+                    pbar.set_description(f'epoch:{epoch} {loss.item()}')
+                print(f'epoch:{epoch} {total_loss/len(dataloader)}')
+                scheduler.step()
 
     if not os.path.exists('data'):
         os.mkdir('data')
@@ -136,24 +139,27 @@ def train_controlnet():
     scheduler = torch.optim.lr_scheduler.LinearLR(
         optimizer, start_factor=1, end_factor=0.1, total_iters=epochs)
 
-    for epoch in tqdm(range(epochs)):
-        total_loss = 0
-        for batch, (x, pos, theta) in tqdm(enumerate(dataloader)):
-            x, pos, theta = x.to(device), pos.to(device), theta.to(device)
-            x = normalize(x)
-            t = torch.randint(1, steps, (batch_size,),
-                              device=device).long()
-            y = torch.randn_like(x).to(device)
-            x = gen_xt(x, t, y)
-            x, y = x.to(device), y.to(device)
-            pred = model(x, t, pos, theta)
-            loss = criterion(pred, y)
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            total_loss += loss.item()
-        print(f'epoch:{epoch} {total_loss/len(dataloader)}')
-        scheduler.step()
+    with tqdm(range(epochs)) as pbar:
+        for epoch in tqdm(range(epochs)):
+            with torch.autocast():
+                total_loss = 0
+                for batch, (x, pos, theta) in tqdm(enumerate(dataloader)):
+                    x, pos, theta = x.to(device), pos.to(device), theta.to(device)
+                    x = normalize(x)
+                    t = torch.randint(1, steps, (batch_size,),
+                                    device=device).long()
+                    y = torch.randn_like(x).to(device)
+                    x = gen_xt(x, t, y)
+                    x, y = x.to(device), y.to(device)
+                    pred = model(x, t, pos, theta)
+                    loss = criterion(pred, y)
+                    optimizer.zero_grad()
+                    loss.backward()
+                    optimizer.step()
+                    total_loss += loss.item()
+                    pbar.set_description(f'epoch:{epoch} {loss.item()}')
+                print(f'epoch:{epoch} {total_loss/len(dataloader)}')
+                scheduler.step()
 
     if not os.path.exists('data'):
         os.mkdir('data')
