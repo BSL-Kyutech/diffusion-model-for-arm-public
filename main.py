@@ -6,7 +6,7 @@ import copy
 import time
 
 from simulator import definition as armdef
-from diffusion_model import ModelForXY, ModelForTheta, steps, extract, normalize, denormalize
+from diffusion_model import ControlNet, ModelForXY, ModelForTheta, steps, extract, normalize, denormalize
 
 
 # pathの点を順番に移動する
@@ -15,8 +15,8 @@ from diffusion_model import ModelForXY, ModelForTheta, steps, extract, normalize
 def move(path, while_sleep_time=0):
     pygame.init()
     display = pygame.display.set_mode((armdef.width, armdef.height))
-    model = ModelForXY(steps)
-    model.load_state_dict(torch.load("data/model_for_xy.pth"))
+    model = ControlNet(steps)
+    model.load_state_dict(torch.load("data/controlnet.pth"))
     model = model.cuda()
     xt = torch.randn(armdef.arm.spring_joint_count*2).cuda()
     first = True
@@ -62,10 +62,7 @@ def draw_circle():
         l += [(x0+r*np.cos(rad), y0+r*np.sin(rad))]
     move(l,  0.001)
 
-def xy_and_theta(x, y, theta):
-    pygame.init()
-    display = pygame.display.set_mode((armdef.width, armdef.height))
-
+def xy_and_theta(x, y, theta, display):
     model_xy = ModelForXY(steps)
     model_xy.load_state_dict(torch.load("data/model_for_xy.pth"))
     model_xy = model_xy.cuda()
@@ -85,7 +82,7 @@ def xy_and_theta(x, y, theta):
 
     for i in reversed(range(1, steps)):
         xt=model_xy.denoise_once(xt, i, pos)
-        xt=model_theta.denoise_once(xt, i, theta).cuda()
+        xt=model_theta.denoise_once(xt, i, theta)
 
     arm_ = copy.deepcopy(armdef.arm)
 
@@ -93,14 +90,62 @@ def xy_and_theta(x, y, theta):
     armdef.arm.calc(xt.tolist())
     display.fill((255, 255, 255))
     armdef.arm.draw(display)
+    font = pygame.font.Font(None,  24)
+    text1 = font.render(str(f"x: {armdef.arm.last.x[1]}"), True, (0, 0, 0))
+    text2 = font.render(str(f"theta: {theta}"), True, (0, 0, 0))
+    display.blit(text1, (10,10))
+    display.blit(text2, (10,40))
+    pygame.draw.circle(display, (0, 0, 0), (int(x), int(y)), 10)
     pygame.display.update()
-    pygame.time.wait(1000)
+    pygame.time.wait(100)
 
-    pygame.quit()
+def controlnet(x, y, theta, display):
+    model = ControlNet(steps)
+    #model.load_state_dict(torch.load("data/controlnet_xy_and_theta.pth"))
+    model.load_state_dict(torch.load("data/controlnet_xy.pth"))
+    model = model.cuda()
+    model.eval()
+
+    xt = torch.randn(armdef.arm.spring_joint_count*2).cuda()
+
+    Y = y
+    X = x
+    pos = torch.FloatTensor([[X, Y]]).cuda()
+    theta = torch.FloatTensor([[theta]]).cuda()
+
+    xt = model.denoise(xt, steps, pos, theta)
+
+    arm_ = copy.deepcopy(armdef.arm)
+
+    xt = denormalize(xt)
+    armdef.arm.calc(xt.tolist())
+    display.fill((255, 255, 255))
+    armdef.arm.draw(display)
+    font = pygame.font.Font(None,  24)
+    text1 = font.render(str(f"result: {armdef.arm.last.x[1]/3.14*180} degree"), True, (0, 0, 0))
+    text2 = font.render(str(f"target: {theta.item()/3.14*180} degree"), True, (0, 0, 0))
+    display.blit(text1, (10,10))
+    display.blit(text2, (10,40))
+    pygame.draw.circle(display, (0, 0, 0), (int(x), int(y)), 10)
+    pygame.display.update()
+    pygame.time.wait(100)
+
 
 if __name__ == '__main__':
-    for i in range(-30,30):
-        xy_and_theta(100, 100, -i/20)
+    pygame.init()
+    display = pygame.display.set_mode((armdef.width, armdef.height))
+
+    for i in range(-20,20):
+        #controlnet(armdef.width/2, armdef.height/2-200, i/20, display)
+        #controlnet(armdef.width/2, armdef.height/2-100, i/20, display)
+        #controlnet(armdef.width/2, armdef.height/2-150, i/20, display)
+        controlnet(armdef.width/2+100, armdef.height/2-150, 3.14/2*i/20, display)
+    pygame.quit()
+
+    #for i in range(-20,20):
+    #    xy_and_theta(armdef.width/2, armdef.height/2-200, i/20, display)
+    #pygame.quit()
+
     #l = []
     #for i in range(360):
     #    rad = np.deg2rad(i)

@@ -5,8 +5,8 @@ import random
 def gen_random_inputs(arm):
     res = []
     for i in range(arm.spring_joint_count):
-        res.append(random.uniform(0, 30))
-        res.append(random.uniform(0, 30))
+        res.append(random.uniform(0, 40))
+        res.append(random.uniform(0, 40))
     return res
 
 

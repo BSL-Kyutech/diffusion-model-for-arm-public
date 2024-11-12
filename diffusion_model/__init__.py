@@ -1,4 +1,4 @@
-from .model import ModelForXY, ModelForTheta, steps, extract, Dataset, gen_xt, n, normalize, denormalize
+from .model import ControlNet, ModelForXY, ModelForTheta, steps, extract, Dataset, gen_xt, n, normalize, denormalize
 
-__all__ = ['ModelForXY', 'ModelForTheta', 'steps', 'extract', 'Dataset',
+__all__ = ['ControlNet', 'ModelForXY', 'ModelForTheta', 'steps', 'extract', 'Dataset',
            'gen_xt', 'n', 'normalize', 'denormalize']
