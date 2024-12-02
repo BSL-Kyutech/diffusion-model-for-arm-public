@@ -9,7 +9,7 @@ if __name__ == '__main__':
     df = pd.DataFrame()
     for i in tqdm(range(10000)):
         df = pd.concat(
-            [df, gen_data(random.randint(400, 880), random.randint(100, 400))])
+            [df, gen_data(random.randint(300, 780), random.randint(100, 300))])
 
     if not os.path.exists('data'):
         os.mkdir('data')
