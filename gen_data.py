@@ -7,9 +7,9 @@ import os
 # 教師データを生成してdata/train.csvに保存する
 if __name__ == '__main__':
     df = pd.DataFrame()
-    for i in tqdm(range(100000)):
+    for i in tqdm(range(10000)):
         df = pd.concat(
-            [df, gen_data(random.randint(300, 980), random.randint(100, 600))])
+            [df, gen_data(random.randint(400, 880), random.randint(100, 400))])
 
     if not os.path.exists('data'):
         os.mkdir('data')

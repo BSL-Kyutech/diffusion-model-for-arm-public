@@ -5,8 +5,8 @@ import pandas as pd
 
 def gen_data(x, y):
     df = pd.DataFrame()
-    #input_, x_, y_, theta = yamanobori(armdef.arm, x, y, 100)
-    input_ = gen_random_inputs(armdef.arm)
+    input_, x_, y_, theta = yamanobori(armdef.arm, x, y, 100)
+    #input_ = gen_random_inputs(armdef.arm)
     df = pd.DataFrame([input_])
     armdef.arm.calc(input_)
     df['x'] = armdef.arm.last.x[0][0]

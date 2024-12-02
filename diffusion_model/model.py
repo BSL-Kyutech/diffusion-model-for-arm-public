@@ -23,18 +23,20 @@ class Model(nn.Module):
         super().__init__()
         self.d = 1024
 
-        self.m = nn.ZeroPad1d(
-            (0, self.d - armdef.arm.spring_joint_count*2))
+        #self.m = nn.ZeroPad1d(
+        #    (0, self.d - armdef.arm.spring_joint_count*2))
 
         self.pe = PositionalEncoding(steps, self.d)
         self.middles = nn.ModuleList([])
+        self.fc = nn.Linear(armdef.arm.spring_joint_count*2, self.d)
+        self.relu = nn.ReLU()
 
     def forward(self, x: torch.Tensor, step: torch.Tensor, feature: torch.Tensor):
+        x = self.fc(x)
+        x = self.relu(x)
+        x = self.pe(x, step)
         for middle in self.middles:
-            x = self.m(x)
-            x = self.pe(x, step)
             x = middle(x, feature)
-            x = x[:, :armdef.arm.spring_joint_count*2]
         return x
 
     def denoise(self, xt: torch.Tensor, steps: int, pos):
@@ -83,16 +85,20 @@ class ControlNet(nn.Module):
         self.pos_d = 2
         self.theta_d = 1
 
-        self.m = nn.ZeroPad1d(
-            (0, self.d - armdef.arm.spring_joint_count*2))
+        #self.m = nn.ZeroPad1d(
+        #    (0, self.d - armdef.arm.spring_joint_count*2))
+        self.fc = nn.Linear(armdef.arm.spring_joint_count*2, self.d)
+        self.relu = nn.ReLU()
 
         self.pe = PositionalEncoding(steps, self.d)
 
         self.encoder = FC(self.d)
         self.decoder = FC(self.d)
 
-        self.m_copy = nn.ZeroPad1d(
-            (0, self.d - armdef.arm.spring_joint_count*2))
+        #self.m_copy = nn.ZeroPad1d(
+        #    (0, self.d - armdef.arm.spring_joint_count*2))
+        self.fc_copy = nn.Linear(armdef.arm.spring_joint_count*2, self.d)
+        self.relu_copy = nn.ReLU()
 
         self.pe_copy = PositionalEncoding(steps, self.d)
 
@@ -108,31 +114,38 @@ class ControlNet(nn.Module):
         nn.init.zeros_(self.zeroconv1.weight)
         nn.init.zeros_(self.zeroconv2.weight)
         nn.init.zeros_(self.zeroconv3.weight)
+        self.last_fc = nn.Linear(self.d, armdef.arm.spring_joint_count*2)
 
     def forward(self, x: torch.Tensor, step: torch.Tensor, feature1: torch.Tensor, feature2: torch.Tensor = None):
 
         if feature2 is None:
-            self.m.requires_grad_(True)
+            self.fc.requires_grad_(True)
+            self.relu.requires_grad_(True)
             self.pe.requires_grad_(True)
             self.encoder.requires_grad_(True)
             self.fc1.requires_grad_(True)
             self.decoder.requires_grad_(True)
+            self.last_fc.requires_grad_(True)
 
-            x = self.m(x)
+            x = self.fc(x)
+            x = self.relu(x)
             x = self.pe(x, step)
             x = self.encoder(x)
             x = x + self.fc1(feature1)
             x = self.decoder(x)
-            x = x[:, :armdef.arm.spring_joint_count*2]
+            x = self.last_fc(x)
             return x
         else:
-            self.m.requires_grad_(False)
+            self.fc.requires_grad_(False)
+            self.relu.requires_grad_(False)
             self.pe.requires_grad_(False)
             self.encoder.requires_grad_(False)
             self.fc1.requires_grad_(False)
             self.decoder.requires_grad_(False)
+            self.last_fc.requires_grad_(False)
 
-            x = self.m(x)
+            x = self.fc(x)
+            x = self.relu(x)
             x_first = x
             x = self.pe(x, step)
             x = self.encoder(x)
@@ -149,8 +162,7 @@ class ControlNet(nn.Module):
             x = self.decoder(x + x_)
             x_ = self.decoder_copy(x__)
             x = x + self.zeroconv3(x_.view(-1,1,1024)).view(-1, 1024)
-
-            x = x[:, :armdef.arm.spring_joint_count*2]
+            x = self.last_fc(x)
             return x
 
     def denoise(self, xt: torch.Tensor, steps: int, pos, theta):
@@ -246,12 +258,22 @@ class FC(nn.Module):
         self.fc = nn.Linear(d, d)
         self.bn = nn.BatchNorm1d(d)
         self.fc2 = nn.Linear(d, d)
+        self.bn2 = nn.BatchNorm1d(d)
+        self.fc3 = nn.Linear(d, d)
+        self.bn3 = nn.BatchNorm1d(d)
+        self.fc4 = nn.Linear(d, d)
 
     def forward(self, x: torch.Tensor):
         x = self.fc(x)
         x = self.bn(x)
         x = self.relu(x)
         x = self.fc2(x)
+        x = self.bn2(x)
+        x = self.relu(x)
+        x = self.fc3(x)
+        x = self.bn3(x)
+        x = self.relu(x)
+        x = self.fc4(x)
         return x
 
 
