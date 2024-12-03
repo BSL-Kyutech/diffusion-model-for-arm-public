@@ -107,7 +107,7 @@ def train_controlnet(finetune=False):
     epochs = 500
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
     scheduler = torch.optim.lr_scheduler.LinearLR(
-        optimizer, start_factor=1, end_factor=0.01, total_iters=epochs)
+        optimizer, start_factor=1, end_factor=0.1, total_iters=epochs)
     criterion = nn.MSELoss()
 
     if finetune==False:
@@ -144,7 +144,7 @@ def train_controlnet(finetune=False):
 
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
     scheduler = torch.optim.lr_scheduler.LinearLR(
-        optimizer, start_factor=1, end_factor=0.01, total_iters=epochs)
+        optimizer, start_factor=1, end_factor=0.1, total_iters=epochs)
 
     print("train theta")
     for epoch in tqdm(range(epochs)):

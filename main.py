@@ -120,6 +120,7 @@ def controlnet(x, y, theta, display):
     xt = denormalize(xt)
     armdef.arm.calc(xt.tolist())
     display.fill((255, 255, 255))
+    pygame.draw.line(display, (255, 0, 0), (x, y), (np.cos(np.pi/2-theta.item())*70+x, np.sin(np.pi/2-theta.item())*70+y), 5)
     armdef.arm.draw(display)
     font = pygame.font.Font(None,  24)
     text1 = font.render(str(f"result: {armdef.arm.last.x[1]/3.14*180} degree"), True, (0, 0, 0))
